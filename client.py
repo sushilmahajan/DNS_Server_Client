@@ -2,6 +2,8 @@ import codecs
 import sys
 import socket
 import bitstring
+from timer import *
+from _thread import *
 
 qtypes = {"A": 1, "NS": 2, "CNAME": 5, "MX": 15, "SOA": 6, "PTR": 12}
 qclasses = {"IN": "0x0001", "CH": "0x0003", "HS": "0x0004"}
@@ -34,16 +36,20 @@ class DNS_Resolver():
     def __init__(self):
         # TODO make variables private 
         self.domain = ""        # Default domain name for lookup
-        self.servers = []       # List of servers to query
+        self.servers = ["127.0.0.53"]       # List of servers to query
         self.def_server = "127.0.0.53"    # Default server for DNS lookup, 
         self.port = 53        # Server port number
-        self.timeout = 2        # Initial timeout value in seconds
-        self.retry = 4          # Number of retries
+        self.timeout = 1        # Initial timeout value in seconds
+        self.retry = 3          # Number of retries
         self.cl = "IN"          # DNS query class 
         self.qtype = "A"        # Default query type 
         self.rec = True         # Recursive flag
         # create client socket
         self.csocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # Internet, UDP.
+        self.timer = Timer(self.timeout)
+        self.data = ""
+        
+        start_new_thread(self.receive, ())
     
     # This function will decode resolv.conf & set parameters accordingly
     def decode_resolv_conf(self): 
@@ -96,6 +102,10 @@ class DNS_Resolver():
             else:
                 print("Enter a valid number")
                 
+    def server(self, server):
+        self.def_server = server
+        self.servers[0] = server
+
     # Create a DNS query packet using given parameters
     def make_query(self, host):
         global qtypes, qclasses
@@ -206,16 +216,43 @@ class DNS_Resolver():
             
         return response_code, result
     
+    def receive(self):
+        self.data, addr = self.csocket.recvfrom(1024)
+        self.timer.stop()
+
     # Send request, handle response/timeout and return resolved output or error
     def resolve(self, host):
         # Transmit packet over UDP
         data = self.make_query(host)
-        self.csocket.sendto(data.tobytes(), (self.def_server, self.port)) 
         
-        # Receive the response packet 
-        data, addr = self.csocket.recvfrom(1024)
+        timer_val = self.timeout
+        rcv_flag = 0
+        print(time.time())
+        for i in range(self.retry):
+            for server in self.servers:
+                self.csocket.sendto(data.tobytes(), (server, self.port)) 
+                
+                # Receive the response packet 
+                self.timer.start()
+                while self.timer.running() and not self.timer.timeout():
+                    pass
+                if self.timer.timeout():
+                    #print("Timeout for packet")
+                    self.timer.stop()
+                else:
+                    rcv_flag = 1
+                    print("Response received")
+            if rcv_flag:
+                break
+            timer_val *= 2
+            self.timer = Timer(timer_val)
+            if i == self.retry-1:
+                print("Timeout")
+                print(time.time())
+                sys.exit()
 
-        # Implement Retry & timeout here TODO
+
+        data = self.data
         # Decode response packe & print the result/error
         response_code, result = self.decode_response(host, data)
         
@@ -250,6 +287,8 @@ def main():
             if cmd_list[0] == "set":
                 for i in range(1, len(cmd_list)):
                     resolver.set(cmd_list[i])
+            elif cmd_list[0] == "server":
+                resolver.server(cmd_list[1])
             else:
                 resolver.resolve(cmd_list[0])
             cmd = input("> ")
