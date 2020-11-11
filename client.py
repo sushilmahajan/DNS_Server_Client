@@ -205,20 +205,61 @@ class DNS_Resolver():
                 x = y + 128
                 y = x + 8
                 for i in range(num_of_records):
-                    size = int(data[x:y].hex, 16)
-                    x = y
-                    y = x + 8 * size
-                    print("nameserver = {}".format(codecs.decode(data[x:y].hex, "hex_codec").decode()))
-                    x = y + 14*8
+                    cname = ""
+                    while True:
+                        size = int(data[x:y].hex, 16)
+                        if size == 0 or size == 192:
+                            if size == 0:
+                                y -= 8
+                            break
+                        x = y
+                        y = x + 8 * size
+                        cname += codecs.decode(data[x:y].hex, "hex_codec").decode() + "."
+                        x = y
+                        y = x + 8
+                    x = y + 13*8
                     y = x + 8
+                    print("{} nameserver = {}".format(host, cname))
             elif self.qtype == "CNAME":
-                pass
-            
+                x = y + 128
+                y = x + 8
+                for i in range(num_of_records):
+                    cname = ""
+                    while True:
+                        size = int(data[x:y].hex, 16)
+                        if size == 0 or size == 192:
+                            break
+                        x = y
+                        y = x + 8 * size
+                        cname += codecs.decode(data[x:y].hex, "hex_codec").decode() + "."
+                        x = y
+                        y = x + 8
+                    print("{} cname = {}".format(host, cname))
+            elif self.qtype == "MX":
+                x = y + 144
+                y = x + 8
+                for i in range(num_of_records):
+                    cname = ""
+                    pref = int(data[x-8:y-8].hex, 16)
+                    while True:
+                        size = int(data[x:y].hex, 16)
+                        if size == 0 or size == 192:
+                            break
+                        print(size)
+                        x = y
+                        y = x + 8 * size
+                        cname += codecs.decode(data[x:y].hex, "hex_codec").decode() + "."
+                        x = y
+                        y = x + 8
+                    print("{} mail exchanger = {} {}".format(host, pref, cname))
+                    x += 16*8
+                    y = x + 8
         return response_code, result
     
     def receive(self):
-        self.data, addr = self.csocket.recvfrom(1024)
-        self.timer.stop()
+        while True:
+            self.data, addr = self.csocket.recvfrom(1024)
+            self.timer.stop()
 
     # Send request, handle response/timeout and return resolved output or error
     def resolve(self, host):
@@ -249,7 +290,7 @@ class DNS_Resolver():
             if i == self.retry-1:
                 print("Timeout")
                 print(time.time())
-                sys.exit()
+                return
 
 
         data = self.data
@@ -281,18 +322,21 @@ def main():
                 pass
                 # TODO resolve the servername, handle error if occur 
         # Interactive mode
-        cmd = input("> ")
-        cmd_list = cmd.split()
-        while cmd_list[0] != "exit":
-            if cmd_list[0] == "set":
-                for i in range(1, len(cmd_list)):
-                    resolver.set(cmd_list[i])
-            elif cmd_list[0] == "server":
-                resolver.server(cmd_list[1])
-            else:
-                resolver.resolve(cmd_list[0])
+        try: 
             cmd = input("> ")
             cmd_list = cmd.split()
+            while cmd_list[0] != "exit":
+                if cmd_list[0] == "set":
+                    for i in range(1, len(cmd_list)):
+                        resolver.set(cmd_list[i])
+                elif cmd_list[0] == "server":
+                    resolver.server(cmd_list[1])
+                else:
+                    resolver.resolve(cmd_list[0])
+                cmd = input("> ")
+                cmd_list = cmd.split()
+        except:
+            sys.exit()
     else:
         # Non-Interactive mode
         resolver.resolve(sys.argv[1])
