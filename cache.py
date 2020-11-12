@@ -110,13 +110,12 @@ class CachedEntity:
 
     def _process_packet(self, packet):
         self.head = packet[:12]
-        print(self.head)
+        #print(self.head)
         spacket = packet[12:]
-        print(spacket)
+        #print(spacket)
         sections = self._parse_sections(self.head, spacket)
 
         for section in sections:
-            print(section)
             self.sections.append(InnerEntity(self.get_raw_ttl(section), get_cur_time(), section))
 
     def _parse_sections(self, head, packet):
@@ -172,10 +171,10 @@ class CachedEntity:
         ttl = section[6:10]
         return struct.unpack('>I', ttl)[0]
 
-packet = b'\x1a+\x81\x80\x00\x01\x00\x04\x00\x00\x00\x00\x06google\x03com\x00\x00\x02\x00\x01\xc0\x0c\x00\x02\x00\x01\x00\x00\x1bx\x00\x06\x03ns3\xc0\x0c\xc0\x0c\x00\x02\x00\x01\x00\x00\x1bx\x00\x06\x03ns2\xc0\x0c\xc0\x0c\x00\x02\x00\x01\x00\x00\x1bx\x00\x06\x03ns1\xc0\x0c\xc0\x0c\x00\x02\x00\x01\x00\x00\x1bx\x00\x06\x03ns4\xc0\x0c'
-p = b'\x06google'
-#packet = bytearray(packet)
-#print(packet)
-qtype, question = "", ""
-temp = CachedEntity(packet, qtype, question)
-#temp.process_packet(packet)
+#packet = b'\x11\x11\x81\x80\x00\x01\x00\x05\x00\x00\x00\x00\x06google\x03com\x00\x00\x0f\x00\x01\xc0\x0c\x00\x0f\x00\x01\x00\x00\x02#\x00\x11\x00\x1e\x04alt2\x05aspmx\x01l\xc0\x0c\xc0\x0c\x00\x0f\x00\x01\x00\x00\x02#\x00\t\x002\x04alt4\xc0/\xc0\x0c\x00\x0f\x00\x01\x00\x00\x02#\x00\x04\x00\n\xc0/\xc0\x0c\x00\x0f\x00\x01\x00\x00\x02#\x00\t\x00\x14\x04alt1\xc0/\xc0\x0c\x00\x0f\x00\x01\x00\x00\x02#\x00\t\x00(\x04alt3\xc0/'
+#p = b'\x06google'
+##packet = bytearray(packet)
+#print(packet.hex())
+#qtype, question = "", ""
+#temp = CachedEntity(packet, qtype, question)
+##temp.process_packet(packet)
