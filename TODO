@@ -1,1 +1,1 @@
-1. remove def_server param from resolver
+1. handle 'any' query server

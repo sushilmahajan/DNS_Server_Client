@@ -1,6 +1,6 @@
 from resolver import *
 
-myserver = True
+myserver = 1
 
 class DNS_Client():
     def __init__(self, arg_list):
@@ -34,6 +34,7 @@ class DNS_Client():
                         self.server(cmd_list[1])
                     else:
                         self.resolver.resolve(cmd_list[0])
+                        self.resolver.format_output()
             except Exception as e:
                 exc_type, exc_obj, exc_tb = sys.exc_info()
                 fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -41,6 +42,7 @@ class DNS_Client():
         else:
             # Non-Interactive mode
             self.resolver.resolve(self.arg_list[1])
+            self.resolver.format_output()
     
     # This function will decode resolv.conf & set parameters accordingly
     def decode_resolv_conf(self): 

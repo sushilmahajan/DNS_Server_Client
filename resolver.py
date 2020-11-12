@@ -48,14 +48,15 @@ class DNS_Resolver():
         start_new_thread(self.receive, ())
     
     def get_qname(self):
-        qname = self.decode_rdata(self.response_data[12:])
+        qname = self.decode_rdata(self.question)
+    
     # Create a DNS query packet using given parameters
     def make_query(self, host):
         try: 
             opcode = 1 << 11 if is_ip(host) else 0
             recurse = 1 << 8 if self.rec else 0
             host = host + self.domain if self.domain != "" else host
-            tid = random.randrange(0, 65535)
+            tid = 0x1111 #random.randrange(0, 65535)
             flags = opcode | recurse
             
             # Framing Header
@@ -85,6 +86,7 @@ class DNS_Resolver():
         try: 
             x, y = 0, 0
             data1, rdata = data, ""
+            print(data1)
             while True:
                 length = data1[x]
                 if length & 0xc0: 
@@ -111,11 +113,12 @@ class DNS_Resolver():
         return data, packet[index:]
 
     # Function to decode DNS answer packet
-    def decode_response(self, host, data):
+    def decode_response(self, data):
         try:
             packet = data
             # Get header
             self.header, packet = self.split_packet(packet, 12)
+            #print(self.header)
             #ancount = int.from_bytes(self.header[6:8], byteorder='big')
             #print(ancount)
             #response_code = int.from_bytes(self.header[2:4], byteorder='big') & 15
@@ -123,6 +126,7 @@ class DNS_Resolver():
 
             # Get self.question
             self.question, packet = self.split_packet(packet, packet.find(b'\x00')+5)
+            #print(self.question)
             #qname = self.decode_rdata(self.question)
             #qtype = int.from_bytes(self.question[-4:-2], byteorder='big')
             #print(qname)
@@ -139,6 +143,7 @@ class DNS_Resolver():
                 #print(ans)
 
                 section = name + info + rlength + rdata
+                #print(section)
                 self.sections.append(section)
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -172,7 +177,7 @@ class DNS_Resolver():
                         print("{} nameserver = {}".format(qname, ans))
                     elif qtype == 5:
                         ans = self.decode_rdata(rdata)
-                        print("{} cname = {}".format(host, ans))
+                        print("{} cname = {}".format(qname, ans))
                     elif qtype == 6:
                         origin, rdata = self.split_packet(rdata,
                                 rdata.find(b'\x0c')+1)
@@ -266,9 +271,7 @@ class DNS_Resolver():
                     return
 
             data = self.response_data
-            #print(self.response_data)
-            self.decode_response(host, data)
-            self.format_output()
+            self.decode_response(data)
         
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()

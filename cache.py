@@ -178,3 +178,6 @@ class CachedEntity:
 #qtype, question = "", ""
 #temp = CachedEntity(packet, qtype, question)
 ##temp.process_packet(packet)
+#p = bytes([(p[0] & 0xf0) | 2]) + p[1:]
+#print(p)
+
