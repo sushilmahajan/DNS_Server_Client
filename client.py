@@ -6,21 +6,29 @@ class DNS_Client():
     def __init__(self, arg_list):
         self.resolver = DNS_Resolver()
         self.arg_list = arg_list
+        self.resolver.servers = self.decode_resolv_conf()
         if myserver:
             self.resolver.servers[0] = "127.0.0.1"
             self.resolver.port = 8000
+    
+    # This function will decode resolv.conf & set parameters accordingly
+    def decode_resolv_conf(self): 
+        f = open('/etc/resolv.conf', 'r')
+        lines = f.readlines()
+        servers = []
+        for line in lines:
+            words = line.split()
+            if len(words) and words[0] == "nameserver":
+                servers.append(words[1])
+        return servers
     
     def run(self):
         if len(self.arg_list) == 1 or (len(self.arg_list) == 3 and self.arg_list[1] == "-"):
             # Set default server for DNS lookup
             if len(self.arg_list) == 3 and self.arg_list[1] == "-":
                 if is_ip(self.arg_list[2]):
-                    self.resolver.servers[0] = self.arg_list[2]   # TODO use method instead
-                else:
-                    # TODO resolve the servername, handle error if occur 
-                    #self.resolver.resolve(self.arg_list[2])
-                    pass
-                # Interactive mode
+                    self.resolver.servers[0] = self.arg_list[2]   
+            # Interactive mode
             try: 
                 while True:
                     cmd = input("> ")
@@ -44,14 +52,8 @@ class DNS_Client():
             self.resolver.resolve(self.arg_list[1])
             self.resolver.format_output()
     
-    # This function will decode resolv.conf & set parameters accordingly
-    def decode_resolv_conf(self): 
-        # TODO
-        pass
-    
     # Implementation of set option of nslookup 
     def set(self, arg):
-        # TODO suboptions - ndots, search list 
         global qtypes
         try:
             arg_list = arg.split("=")
@@ -105,7 +107,10 @@ class DNS_Client():
 
 def main():
     client = DNS_Client(sys.argv)
-    client.run()
+    try:
+        client.run()
+    except:
+        return
 
 if __name__ == "__main__":
     main()

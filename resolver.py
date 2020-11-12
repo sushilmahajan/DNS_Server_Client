@@ -27,7 +27,6 @@ def is_ip(host):
 class DNS_Resolver():
     # Initialize parameters 
     def __init__(self):
-        # TODO make variables private 
         self.servers = ["127.0.0.53"]       # List of servers to query
         self.port = 53          # Server port number
         self.cl = "IN"          # DNS query class 
@@ -47,17 +46,13 @@ class DNS_Resolver():
         
         start_new_thread(self.receive, ())
     
-    def get_qname(self):
-        qname = self.decode_rdata(self.question)
-    
     # Create a DNS query packet using given parameters
     def make_query(self, host):
         try: 
-            opcode = 1 << 11 if is_ip(host) else 0
             recurse = 1 << 8 if self.rec else 0
             host = host + self.domain if self.domain != "" else host
-            tid = 0x1111 #random.randrange(0, 65535)
-            flags = opcode | recurse
+            tid = random.randrange(0, 65535)
+            flags = recurse
             
             # Framing Header
             header_values = (tid, flags, 1, 0, 0, 0)
@@ -86,7 +81,6 @@ class DNS_Resolver():
         try: 
             x, y = 0, 0
             data1, rdata = data, ""
-            print(data1)
             while True:
                 length = data1[x]
                 if length & 0xc0: 
@@ -118,19 +112,8 @@ class DNS_Resolver():
             packet = data
             # Get header
             self.header, packet = self.split_packet(packet, 12)
-            #print(self.header)
-            #ancount = int.from_bytes(self.header[6:8], byteorder='big')
-            #print(ancount)
-            #response_code = int.from_bytes(self.header[2:4], byteorder='big') & 15
-            #print(response_code)
-
             # Get self.question
             self.question, packet = self.split_packet(packet, packet.find(b'\x00')+5)
-            #print(self.question)
-            #qname = self.decode_rdata(self.question)
-            #qtype = int.from_bytes(self.question[-4:-2], byteorder='big')
-            #print(qname)
-            #print(qtype)
             
             # Get answer RRs
             self.sections = []
@@ -139,11 +122,8 @@ class DNS_Resolver():
                 info, packet = self.split_packet(packet, 8)
                 rlength, packet = self.split_packet(packet, 2)
                 rdata, packet = self.split_packet(packet, struct.unpack('>H', rlength)[0])
-                #ans = self.decode_rdata(rdata)
-                #print(ans)
 
                 section = name + info + rlength + rdata
-                #print(section)
                 self.sections.append(section)
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -162,7 +142,7 @@ class DNS_Resolver():
                     info, section = self.split_packet(section, 8)
                     rlength, section = self.split_packet(section, 2)
                     rdata, section = self.split_packet(section, struct.unpack('>H', rlength)[0])
-                    #print(rdata)
+                    
                     qtype = info[1]
                     if qtype == 1:
                         ip_address = ".".join([
@@ -182,11 +162,9 @@ class DNS_Resolver():
                         origin, rdata = self.split_packet(rdata,
                                 rdata.find(b'\x0c')+1)
                         origin = self.decode_rdata(origin)
-                        print(rdata)
                         mail_addr, rdata = self.split_packet(rdata,
                                 rdata.find(b'\x0c')+1)
                         mail_addr = self.decode_rdata(mail_addr)
-                        print(rdata)
                         serial = int.from_bytes(rdata[0:4], 'big')
                         refresh = int.from_bytes(rdata[4:8], 'big')
                         retry = int.from_bytes(rdata[8:12], 'big')
@@ -236,8 +214,7 @@ class DNS_Resolver():
         while True:
             try:
                 self.response_data, addr = self.csocket.recvfrom(1024)
-                if addr[0] == self.servers[0]:
-                    self.timer.stop()
+                self.timer.stop()
             except Exception as e:
                 print(e)
 
@@ -258,7 +235,6 @@ class DNS_Resolver():
                     while self.timer.running() and not self.timer.timeout():
                         pass
                     if self.timer.timeout():
-                        #print("Timeout for packet")
                         self.timer.stop()
                     else:
                         rcv_flag = 1
@@ -267,11 +243,10 @@ class DNS_Resolver():
                 timer_val *= 2
                 self.timer = Timer(timer_val)
                 if i == self.retry-1:
-                    print("Timeout")
+                    print("Request timed out")
                     return
 
-            data = self.response_data
-            self.decode_response(data)
+            self.decode_response(self.response_data)
         
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
