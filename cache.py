@@ -110,10 +110,13 @@ class CachedEntity:
 
     def _process_packet(self, packet):
         self.head = packet[:12]
+        print(self.head)
         spacket = packet[12:]
+        print(spacket)
         sections = self._parse_sections(self.head, spacket)
 
         for section in sections:
+            print(section)
             self.sections.append(InnerEntity(self.get_raw_ttl(section), get_cur_time(), section))
 
     def _parse_sections(self, head, packet):
@@ -123,9 +126,14 @@ class CachedEntity:
 
         while len(packet) > 1:
             name, packet = self._split_packet(packet, packet.find(b'\x00'))
+            print("NAME: ", name)
+            #print(int(str(name.hex), 16))
             info, packet = self._split_packet(packet, 8)
+            print("INFO: ", info)
             rlength, packet = self._split_packet(packet, 2)
+            print("RLENGTH: ", rlength)
             rdata, packet = self._split_packet(packet, struct.unpack('>H', rlength)[0])
+            print("RDATA: ", rdata)
 
             self._process_rdata(info, rdata, spacket)
 
@@ -141,10 +149,8 @@ class CachedEntity:
         offset = codecs.encode(rdata[-2:], 'hex').decode()
         if offset is not '':
             qname = self.__get_qname(rdata, packet)
+            print("QNAME: ", qname)
             self._inner_qnames.append(qname)
-
-    def get_inner_qnames(self):
-        return self._inner_qnames
 
     def __get_qname(self, rdata, packet):
         ndata = rdata[2:] if self.qtype != 2 else rdata
@@ -159,6 +165,17 @@ class CachedEntity:
         rlength = struct.unpack('>H', section[10:12])[0]
         return section[:12+rlength], section[12+rlength:]
 
+    def get_inner_qnames(self):
+        return self._inner_qnames
+
     def get_raw_ttl(self, section):
         ttl = section[6:10]
         return struct.unpack('>I', ttl)[0]
+
+packet = b'\x1a+\x81\x80\x00\x01\x00\x04\x00\x00\x00\x00\x06google\x03com\x00\x00\x02\x00\x01\xc0\x0c\x00\x02\x00\x01\x00\x00\x1bx\x00\x06\x03ns3\xc0\x0c\xc0\x0c\x00\x02\x00\x01\x00\x00\x1bx\x00\x06\x03ns2\xc0\x0c\xc0\x0c\x00\x02\x00\x01\x00\x00\x1bx\x00\x06\x03ns1\xc0\x0c\xc0\x0c\x00\x02\x00\x01\x00\x00\x1bx\x00\x06\x03ns4\xc0\x0c'
+p = b'\x06google'
+#packet = bytearray(packet)
+#print(packet)
+qtype, question = "", ""
+temp = CachedEntity(packet, qtype, question)
+#temp.process_packet(packet)

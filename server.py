@@ -7,8 +7,6 @@ from timer import *
 from client import *
 from cache import *
 
-
-
 def client_handler(ssocket, addr, data):
     csocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     # Decode data -> get qtype, qname
@@ -48,6 +46,7 @@ def client_handler(ssocket, addr, data):
     qname = ".".join(host_name_from)
     # Find in cache
     # Else if recursive, Forward request to 2.2.2.2
+    resolver = Resolver()
     # Frame response
 
 def main():

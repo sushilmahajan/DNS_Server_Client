@@ -1,0 +1,49 @@
+
+    #def make_query(self, host):
+    #    global qtypes, qclasses
+    #    dns_query_format = [
+    #            "uint:16=id"
+    #            , "uint:16=flags"
+    #            , "uint:16=qdcount"
+    #            , "uint:16=ancount"
+    #            , "uint:16=nscount"
+    #            , "uint:16=arcount"
+    #            ]
+    #    dns_query = {
+    #            "id": 0x1a2b 
+    #            , "flags": 0x100 
+    #            , "qdcount": 1 
+    #            , "ancount": 0
+    #            , "nscount": 0
+    #            , "arcount": 0
+    #            }
+    #    
+    #    host_name_to = host.split(".")
+    #    opcode = 1 << 11 if is_ip(host) else 0
+    #    recurse = 1 << 8 if self.rec else 0
+    #    dns_query["flags"] = opcode | recurse
+
+    #    # Construct the QNAME:
+    #    # size|label|size|label|size|...|label|0x00
+    #    j = 0
+    #    for i, tmp in enumerate(host_name_to):
+    #        host_name_to[i] = host_name_to[i].strip()
+    #        dns_query_format.append("hex=" + "qname" + str(j))
+    #        dns_query["qname" + str(j)] = to_hex(len(host_name_to[i]))
+    #        j += 1
+    #        dns_query_format.append("hex=" + "qname" + str(j))
+    #        dns_query["qname" + str(j)] = to_hex(host_name_to[i])
+    #        j += 1
+    #    # Add a terminating byte.
+    #    dns_query_format.append("hex=qname" + str(j))
+    #    dns_query["qname" + str(j)] = to_hex(0)
+    #    # Set the type and class now.
+    #    dns_query_format.append("uintbe:16=qtype")
+    #    dns_query["qtype"] = qtypes[self.qtype] # For the A record.
+    #    dns_query_format.append("hex=qclass")
+    #    dns_query["qclass"] = qclasses[self.cl] # For IN or Internet.
+    #    # Convert the struct to a bit string.
+    #    data = bitstring.pack(",".join(dns_query_format), **dns_query)
+    #    print(data.tobytes())
+    #    return data
+    #
